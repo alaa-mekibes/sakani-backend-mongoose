@@ -4,6 +4,7 @@ import { PropertyType } from "../types/app";
 
 interface IProperty extends ICreatePropertyInput {
     owner: Types.ObjectId;
+    images: string[]
 }
 
 const propertySchema = new Schema<IProperty>(
@@ -17,6 +18,7 @@ const propertySchema = new Schema<IProperty>(
             required: true,
             trim: true,
         },
+        images: [{type: String, required: true}],
         owner: {
             type: Schema.Types.ObjectId,
             ref: "User",

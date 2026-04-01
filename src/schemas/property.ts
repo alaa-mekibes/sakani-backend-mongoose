@@ -16,6 +16,13 @@ export const updatePropertySchema = z.object({
     type: z.enum(Object.values(PropertyType)).optional(),
 }).strict();
 
+export const searchPropertySchema = z.object({
+    title: z.string().min(3).optional(),
+    price: z.coerce.number().positive().optional(),
+    location: z.string().optional(),
+    type: z.enum(Object.values(PropertyType)).optional(),
+}).strict();
+
 export const propertyIdSchema = z.object({
     propertyId: objectId
 }).strict();

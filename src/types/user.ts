@@ -1,4 +1,4 @@
-import type { z } from "../lib/zod";
+import z from "zod";
 import type { createUserSchema, loginUserSchema, updateUserSchema } from "../schemas/user";
 
 export type ICreateUserInput = z.infer<typeof createUserSchema>;

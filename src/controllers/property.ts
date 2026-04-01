@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
-import { ICreatePropertyInput, IPropertyId, IUpdatePropertyInput } from "../types/property";
+import { ICreatePropertyInput, IPropertyId, ISearchPropertyInput, IUpdatePropertyInput } from "../types/property";
 import { Property } from "../models/property";
 import { NotFoundError } from "../errors";
 import { Inquiry } from "../models/inquiry";
@@ -11,10 +11,27 @@ class PropertyController {
     public async addProperty(req: Request, res: Response) {
         const userId = req.user!.id;
         const body = req.validated?.body as ICreatePropertyInput;
+        const files = req.files as Express.Multer.File[];
+        const images = files?.map(file => file.path) ?? [];
 
-        const data = await Property.create({ ...body, owner: userId });
+        const data = await Property.create({ ...body, images, owner: userId });
 
         return res.status(201).json(ApiResponse.success(data));
+    }
+
+    public async getProperties(req: Request, res: Response) {
+        const { title, location, price, type } = req.validated?.query as ISearchPropertyInput;
+
+        const filter: Record<string, unknown> = {};
+
+        if (title) filter.title = { $regex: title, $options: 'i' };
+        if (location) filter.location = { $regex: location, $options: 'i' };
+        if (type) filter.type = type;
+        if (price) filter.price = { $lte: price };
+
+        const properties = await Property.find(filter).lean();
+
+        return res.json(ApiResponse.success(properties));
     }
 
     public async updateProperty(req: Request, res: Response) {
