@@ -56,10 +56,9 @@ class PropertyController {
     }
 
     public async getProperty(req: Request, res: Response) {
-        const userId = req.user!.id;
         const { propertyId } = req.validated.params as IPropertyId;
 
-        const propertyExists = await Property.findOne({ _id: propertyId, owner: userId });
+        const propertyExists = await Property.findById(propertyId).lean();
         if (!propertyExists) throw new NotFoundError("This property is not found");
 
         return res.status(200).json(ApiResponse.success(propertyExists));
