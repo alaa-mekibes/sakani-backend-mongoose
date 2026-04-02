@@ -15,7 +15,7 @@ export const errorHandler = (err: Error, _: Request, res: Response, __: NextFunc
     return res.status(500).json({
         status: 'error',
         message: 'Something went wrong',
-        ...(process.env.NODE_ENV === 'development' && {
+        ...(process.env.NODE_ENV === 'DEVELOPMENT' && {
             error: err.message,
             stack: err.stack
         }),

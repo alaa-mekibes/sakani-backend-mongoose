@@ -18,7 +18,7 @@ const generateToken = (userId: string, res: Response) => {
 
     res.cookie("jwt", token, {
         httpOnly: true, // ? XSS attacks
-        secure: process.env.NODE_ENV === 'production', // ? run in just https
+        secure: process.env.NODE_ENV === 'PRODUCTION', // ? run in just https
         sameSite: "strict", // ? CSRF attacks
         maxAge: (1000 * 60 * 60 * 24) * 7,
     })
