@@ -2,10 +2,9 @@ import type { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { ICreatePropertyInput, IPropertyId, ISearchPropertyInput, IUpdatePropertyInput } from "../types/property";
 import { Property } from "../models/property";
-import { NotFoundError } from "../errors";
-import { Inquiry } from "../models/inquiry";
-import { IInquiryId } from "../types/inquiry";
-import { InquiryStatus } from "../types/app";
+import { BadRequestError, NotFoundError } from "../errors";
+import cloudinary from "../config/cloudinary";
+import { extractPublicId } from "cloudinary-build-url";
 
 class PropertyController {
     public async addProperty(req: Request, res: Response) {
@@ -36,13 +35,36 @@ class PropertyController {
 
     public async updateProperty(req: Request, res: Response) {
         const userId = req.user!.id;
-        const body = req.validated?.body as IUpdatePropertyInput;
+        const { existingImages, ...body } = req.validated?.body as IUpdatePropertyInput;
         const { propertyId } = req.validated.params as IPropertyId;
+        const files = req.files as Express.Multer.File[];
+        const newImages = files?.map(f => f.path) ?? [];
 
-        const propertyExists = await Property.findOneAndUpdate({ _id: propertyId, owner: userId }, { ...body, updatedAt: new Date() }, { returnDocument: 'after' });
-        if (!propertyExists) throw new NotFoundError("This property is not found");
+        const property = await Property.findOne({ _id: propertyId, owner: userId });
+        if (!property) throw new NotFoundError("This property is not found");
 
-        return res.status(200).json(ApiResponse.success(propertyExists));
+        const removedImages = property.images.filter(
+            (img: string) => !existingImages.includes(img)
+        );
+
+        await Promise.all(
+            removedImages.map((img: string) => {
+                const publicId = extractPublicId(img);
+                return cloudinary.uploader.destroy(publicId);
+            })
+        );
+
+        const images = [...existingImages, ...newImages];
+
+        if (images.length > 5) throw new BadRequestError("Maximum 5 images allowed");
+
+        const updatedProperty = await Property.findOneAndUpdate(
+            { _id: propertyId, owner: userId },
+            { ...body, images, updatedAt: new Date() },
+            { returnDocument: 'after' }
+        );
+
+        return res.status(200).json(ApiResponse.success(updatedProperty));
     }
 
     public async deleteProperty(req: Request, res: Response) {
@@ -70,47 +92,6 @@ class PropertyController {
         const propertyExists = await Property.find({ owner: userId });
 
         return res.status(200).json(ApiResponse.success(propertyExists));
-    }
-
-    public async sendMessage(req: Request, res: Response) {
-        const userId = req.user!.id;
-        const { propertyId } = req.validated.params as IPropertyId;
-
-        const propertyExists = await Property.findById(propertyId);
-        if (!propertyExists) throw new NotFoundError("This property is not found");
-
-        const data = await Inquiry.create({ buyer: userId, owner: propertyExists.owner._id });
-
-        return res.status(200).json(ApiResponse.success(data));
-    }
-
-    public async markInquiryRead(req: Request, res: Response) {
-        const userId = req.user!.id;
-        const { inquiryId } = req.validated.params as IInquiryId;
-
-        const inquiryExists = await Inquiry.findOneAndUpdate({ _id: inquiryId, owner: userId }, { status: InquiryStatus.read });
-        if (!inquiryExists) throw new NotFoundError("This inquiry is not found");
-
-        return res.status(200).json(ApiResponse.success(inquiryExists));
-    }
-
-    public async getInquiry(req: Request, res: Response) {
-        const userId = req.user!.id;
-        const { inquiryId } = req.validated.params as IInquiryId;
-
-        const inquiryExists = await Inquiry.findOne({ _id: inquiryId, owner: userId });
-        if (!inquiryExists) throw new NotFoundError("This inquiry is not found");
-
-        return res.status(200).json(ApiResponse.success(inquiryExists));
-    }
-
-    public async getInquiries(req: Request, res: Response) {
-        const userId = req.user!.id;
-        const { propertyId } = req.validated.params as IPropertyId;
-
-        const data = await Inquiry.find({ owner: userId, property: propertyId });
-
-        return res.status(200).json(ApiResponse.success(data));
     }
 }
 

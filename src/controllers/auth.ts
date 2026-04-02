@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { ICreateUserInput, ILoginUserInput, IUpdateUserInput } from "../types/user";
+import type { ICreateUserInput, ILoginUserInput, IUpdateUserInput, IUserId } from "../types/user";
 import generateToken from "../utils/generateToken";
 import { User } from "../models/user";
 import { ConflictError, NotFoundError } from "../errors";
@@ -65,8 +65,19 @@ class AuthController {
 
     public async getMyProfile(req: Request, res: Response) {
         const userId = req.user!.id;
-        const user = await User.findById({ _id: userId });
+        const user = await User.findById(userId);
 
+        if (!user) throw new NotFoundError("the user is not found");
+
+        const { password, ...safeUser } = user.toObject();
+
+        return res.status(200).json(ApiResponse.success(safeUser));
+    }
+
+    public async getUserProfile(req: Request, res: Response) {
+        const {userId} = req.validated.params as IUserId;
+        
+        const user = await User.findById(userId);
         if (!user) throw new NotFoundError("the user is not found");
 
         const { password, ...safeUser } = user.toObject();

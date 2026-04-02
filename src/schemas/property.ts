@@ -4,7 +4,7 @@ import { PropertyType } from "../types/app";
 
 export const createPropertySchema = z.object({
     title: z.string().min(3),
-    price: z.number().positive(),
+    price: z.coerce.number().positive(),
     location: z.string(),
     type: z.enum(Object.values(PropertyType)),
 }).strict();
@@ -14,6 +14,11 @@ export const updatePropertySchema = z.object({
     price: z.number().positive().optional(),
     location: z.string().optional(),
     type: z.enum(Object.values(PropertyType)).optional(),
+    existingImages: z
+        .union([z.string(), z.array(z.string())])
+        .transform(v => [v].flat())
+        .optional()
+        .default([]),
 }).strict();
 
 export const searchPropertySchema = z.object({

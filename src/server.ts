@@ -9,6 +9,7 @@ import cors from 'cors'
 import connectDB from './config/db';
 import authRoutes from './routes/auth';
 import propertyRoutes from './routes/property';
+import inquiryRoutes from './routes/inquiry';
 import notFoundHandler from './middleware/notFound';
 import { errorHandler } from './middleware/error';
 
@@ -41,6 +42,7 @@ app.get('/', (_, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/property', propertyRoutes);
+app.use('/api/inquiry', inquiryRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
