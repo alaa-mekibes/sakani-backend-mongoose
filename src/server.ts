@@ -32,7 +32,7 @@ app.use(helmet());
 app.use(rateLimit(rateLimitOptions));
 app.use(cookieParser());
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL,
   credentials: true,
 }));
 
@@ -48,7 +48,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server running → http://localhost:${PORT}/`);
+  console.log(`Server running → ${process.env.FRONTEND_URL}:${PORT}/`);
 });
 
 export default app;
