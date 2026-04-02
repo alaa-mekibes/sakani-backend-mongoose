@@ -6,6 +6,8 @@ import { ConflictError, NotFoundError } from "../errors";
 import bcrypt from 'bcryptjs';
 import { ApiResponse } from "../utils/apiResponse";
 import { Property } from "../models/property";
+import { extractPublicId } from "cloudinary-build-url";
+import cloudinary from "../config/cloudinary";
 
 class AuthController {
     public async registerUser(req: Request, res: Response) {
@@ -75,8 +77,8 @@ class AuthController {
     }
 
     public async getUserProfile(req: Request, res: Response) {
-        const {userId} = req.validated.params as IUserId;
-        
+        const { userId } = req.validated.params as IUserId;
+
         const user = await User.findById(userId);
         if (!user) throw new NotFoundError("the user is not found");
 
@@ -87,21 +89,34 @@ class AuthController {
 
     public async updateMyProfile(req: Request, res: Response) {
         const userId = req.user!.id;
-        const body = req.validated as IUpdateUserInput;
+        const { ...body } = req.validated?.body as IUpdateUserInput;
+        const file = req.file as Express.Multer.File;
+        const newImage = file?.path;
 
         if (body.email) {
             const userExists = await User.findOne({ email: body.email });
-            if (userExists) throw new ConflictError("This email is already exists");
+            if (userExists) throw new ConflictError("This email already exists");
         }
 
         if (body.password) body.password = await bcrypt.hash(body.password, 10);
 
-        const newUser = await User.findByIdAndUpdate(userId, { ...body, updateAt: new Date() }, { returnDocument: 'after' })
+        if (newImage) {
+            const existedUser = await User.findById(userId);
+            if (existedUser?.avatar) {
+                const publicId = extractPublicId(existedUser.avatar);
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
 
-        if (!newUser) throw new NotFoundError("the user is not found");
+        const newUser = await User.findByIdAndUpdate(
+            userId,
+            { ...body, ...(newImage && { avatar: newImage }), updatedAt: new Date() },
+            { returnDocument: 'after' }
+        );
+
+        if (!newUser) throw new NotFoundError("User not found");
 
         const { password, ...safeUser } = newUser.toObject();
-
         return res.status(200).json(ApiResponse.success(safeUser));
     }
 }

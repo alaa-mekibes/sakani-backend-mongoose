@@ -10,7 +10,7 @@ export type PropertyType = typeof PropertyType[keyof typeof PropertyType];
 //* 
 export const InquiryStatus = {
     pending: "pending",
-    read: "read",
+    contacted: "contacted",
 } as const;
 
 export type InquiryStatus = typeof InquiryStatus[keyof typeof InquiryStatus];

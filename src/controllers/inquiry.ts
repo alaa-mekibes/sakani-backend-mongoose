@@ -10,7 +10,7 @@ import { InquiryStatus } from "../types/app";
 class InquiryController {
 
     //* For property buyer
-        public async getInquiryPerProperty(req: Request, res: Response) {
+    public async getInquiryPerProperty(req: Request, res: Response) {
         const userId = req.user!.id;
         const { propertyId } = req.validated.params as IPropertyId;
 
@@ -46,7 +46,7 @@ class InquiryController {
         const userId = req.user!.id;
         const { inquiryId } = req.validated.params as IInquiryId;
 
-        const inquiryExists = await Inquiry.findOneAndDelete({ _id: inquiryId,  buyer: userId });
+        const inquiryExists = await Inquiry.findOneAndDelete({ _id: inquiryId, buyer: userId });
         if (!inquiryExists) throw new NotFoundError("This inquiry is not found");
 
         return res.status(200).json(ApiResponse.success(inquiryExists));
@@ -62,7 +62,7 @@ class InquiryController {
         return res.status(200).json(ApiResponse.success(data));
     }
 
-        public async getInquiry(req: Request, res: Response) {
+    public async getInquiry(req: Request, res: Response) {
         const userId = req.user!.id;
         const { inquiryId } = req.validated.params as IInquiryId;
 
@@ -72,11 +72,11 @@ class InquiryController {
         return res.status(200).json(ApiResponse.success(inquiryExists));
     }
 
-     public async markInquiryRead(req: Request, res: Response) {
+    public async markInquiryRead(req: Request, res: Response) {
         const userId = req.user!.id;
         const { inquiryId } = req.validated.params as IInquiryId;
 
-        const inquiryExists = await Inquiry.findOneAndUpdate({ _id: inquiryId, owner: userId }, { status: InquiryStatus.read });
+        const inquiryExists = await Inquiry.findOneAndUpdate({ _id: inquiryId, owner: userId }, { status: InquiryStatus.contacted });
         if (!inquiryExists) throw new NotFoundError("This inquiry is not found");
 
         return res.status(200).json(ApiResponse.success(inquiryExists));
