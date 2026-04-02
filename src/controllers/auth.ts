@@ -47,7 +47,7 @@ class AuthController {
         res.cookie('jwt', '', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'PRODUCTION',
-            sameSite: 'strict',
+            sameSite: 'none',
             expires: new Date(0),
         });
 
