@@ -98,6 +98,74 @@ src/
 
 ---
 
+## 🏗 Architecture — MVC
+
+This project follows the **MVC (Model-View-Controller)** pattern adapted for a REST API where there is no View layer — it is replaced by JSON responses consumed by the frontend.
+
+```markdown
+Request → Route → Middleware → Controller → Model → Database
+                                    ↓
+                             JSON Response
+```
+
+### Model — `src/models/`
+
+Defines the data structure and interacts directly with MongoDB via Mongoose. Each model represents a collection in the database.
+
+```markdown
+models/
+├── user.ts       # users collection
+├── property.ts   # properties collection
+└── inquiry.ts    # inquiries collection
+```
+
+### Controller — `src/controllers/`
+
+Contains the business logic. Receives validated data from the request, calls the model, and returns a JSON response. Controllers never interact with the database directly — they always go through the model.
+
+```markdown
+controllers/
+├── auth.ts       # register, login, logout, me
+├── property.ts   # create, read, update, delete property
+└── inquiry.ts    # send inquiry, list inquiries, mark as read
+```
+
+### View — `JSON Responses`
+
+Since this is a REST API, there is no HTML view layer. The View is the JSON response sent back to the frontend, standardized through `ApiResponse`:
+
+```typescript
+// every response follows the same shape
+{ status: 'success', data: { ... } }
+{ status: 'error',   message: '...' }
+```
+
+### Route — `src/routes/`
+
+Maps HTTP methods and URL paths to the correct controller method. Routes also apply middleware (auth, validation, upload) before reaching the controller.
+
+```typescript
+// example flow for POST /api/property
+router.post('/',
+    authMiddleware,           // 1. verify JWT
+    upload.array('images'),   // 2. handle file upload
+    validate(schema),         // 3. validate body with Zod
+    propertyController.create // 4. run business logic
+);
+```
+
+### Middleware — `src/middleware/`
+
+Reusable functions that run between the request and the controller:
+
+| Middleware | Role |
+| ---------- | ---- |
+| `auth.ts` | Verifies JWT cookie, attaches `req.user` |
+| `validate.ts` | Validates request with Zod, attaches `req.validated` |
+| `upload.ts` | Processes file uploads via Multer + Cloudinary |
+| `error.ts` | Catches all thrown errors and returns formatted responses |
+| `notFound.ts` | Catches requests to undefined routes |
+
 ## 🔧 Utility Functions
 
 ### `ApiResponse` — `src/utils/apiResponse.ts`
@@ -174,7 +242,7 @@ throw new ForbiddenError('You don t have access for this');     // 403
 | ------ | ----- | ------ | ----------- |
 | POST | `/:propertyId` | Private | Send inquiry |
 | GET | `/` | Private | Get my inquiries (owner) |
-| PATCH | `/:inquiryId/read` | Private | Mark as read |
+| PATCH | `/:inquiryId/contacted` | Private | Mark as contacted |
 
 ---
 
