@@ -11,7 +11,7 @@ export const createPropertySchema = z.object({
 
 export const updatePropertySchema = z.object({
     title: z.string().min(3).optional(),
-    price: z.number().positive().optional(),
+    price: z.coerce.number().positive().optional(),
     location: z.string().optional(),
     type: z.enum(Object.values(PropertyType)).optional(),
     existingImages: z
