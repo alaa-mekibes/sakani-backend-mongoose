@@ -43,6 +43,8 @@ class AuthController {
         const passwordIsCorrect = await bcrypt.compare(body.password, userExists?.password);
         if (!passwordIsCorrect) throw new ConflictError("The email or password is incorrect");
 
+        if (!userExists.isVerified) throw new ConflictError("Please verify your email first");
+
         const token = generateToken(userExists.id, res);
 
         const { password, ...safeUser } = userExists.toObject();
