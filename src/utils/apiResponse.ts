@@ -1,10 +1,10 @@
 export class ApiResponse {
-    static success<T>(data: T | T[], meta?: Record<string, unknown>, message?: string) {
+    static success<T>(data: T | T[], message?: string, meta?: Record<string, unknown>) {
         return {
             status: 'success' as const,
             data,
-            ...meta,
             message,
+            ...meta,
         };
     }
 

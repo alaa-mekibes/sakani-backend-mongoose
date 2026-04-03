@@ -26,12 +26,10 @@ class AuthController {
 
         await sendVerificationEmail(user.email, code);
 
-        const token = generateToken(user.id, res);
+        await generateToken(user.id, res);
 
 
-        const { password, ...safeUser } = user.toObject();
-
-        return res.status(201).json(ApiResponse.success(safeUser, { token }, 'Check your email for the verification code'));
+        return res.status(201).json(ApiResponse.success(null, 'Check your email for the verification code'));
     }
 
     public async loginUser(req: Request, res: Response) {
@@ -49,7 +47,7 @@ class AuthController {
 
         const { password, ...safeUser } = userExists.toObject();
 
-        return res.status(200).json(ApiResponse.success(safeUser, { token }));
+        return res.status(200).json(ApiResponse.success(safeUser, '', { token }));
     }
 
     public async logoutUser(_: Request, res: Response) {
@@ -100,7 +98,7 @@ class AuthController {
         const token = generateToken(user.id, res);
         const { password, ...safeUser } = user.toObject();
 
-        return res.json(ApiResponse.success(safeUser, { token }));
+        return res.json(ApiResponse.success(safeUser, '', { token }));
     }
 
     public async resendVerificationCode(req: Request, res: Response) {
@@ -110,8 +108,8 @@ class AuthController {
         if (!user) throw new NotFoundError('User not found');
         if (user.isVerified) throw new ConflictError('Already verified');
 
-        const coolDown = 60 * 1000; // 1 minute
-        if (user.verificationExpiry && user.verificationExpiry.getTime() - 9 * 60 * 1000 > Date.now() - coolDown) {
+        const cooldown = 60 * 1000; // 1 minute
+        if (user.verificationExpiry && user.verificationExpiry.getTime() - 9 * 60 * 1000 > Date.now() - cooldown) {
             throw new ConflictError('Please wait 1 minute before requesting a new code');
         }
 
@@ -123,7 +121,7 @@ class AuthController {
 
         await sendVerificationEmail(user.email, code);
 
-        return res.json(ApiResponse.success(null, { message: 'Code resent successfully' }));
+        return res.json(ApiResponse.success(null, 'Code resent successfully'));
     }
 
     public async forgotPassword(req: Request, res: Response) {
@@ -132,9 +130,7 @@ class AuthController {
         const user = await User.findOne({ email });
 
         //* Best practice
-        if (!user) return res.json(ApiResponse.success(null, {
-            message: 'If this email exists you will receive a code'
-        }));
+        if (!user) return res.json(ApiResponse.success(null, 'If this email exists you will receive a code'));
 
         const { code, expiry } = generateVerificationCodeAndExpiry();
 
@@ -145,9 +141,7 @@ class AuthController {
 
         await sendResetPasswordEmail(user.email, code);
 
-        return res.json(ApiResponse.success(null, {
-            message: 'If this email exists you will receive a code'
-        }));
+        return res.json(ApiResponse.success(null, 'If this email exists you will receive a code'));
     }
 
     public async resetPassword(req: Request, res: Response) {
@@ -167,7 +161,7 @@ class AuthController {
         user.resetPasswordExpiry = null;
         await user.save();
 
-        return res.json(ApiResponse.success(null, { message: 'Password reset successfully' }));
+        return res.json(ApiResponse.success(null, 'Password reset successfully'));
     }
 
     public async getMyProfile(req: Request, res: Response) {
