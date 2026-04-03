@@ -16,7 +16,7 @@ export const sendVerificationEmail = async (to: string, code: string) => {
     await transporter.sendMail({
         from: `"Sakani" <${process.env.GMAIL_USER}>`,
         to,
-        subject: '🎯 Verify your Sakani account',
+        subject: 'Verify your Sakani account',
         html,
     });
 };
@@ -28,7 +28,7 @@ export const sendResetPasswordEmail = async (to: string, code: string) => {
     await transporter.sendMail({
         from: `"Sakani" <${process.env.GMAIL_USER}>`,
         to,
-        subject: '🔑 Reset your Sakani password',
+        subject: 'Reset your Sakani password',
         html,
     });
 };
@@ -40,7 +40,7 @@ export const sendWelcomeEmail = async (to: string, name: string) => {
     await transporter.sendMail({
         from: `"Sakani" <${process.env.GMAIL_USER}>`,
         to,
-        subject: '🏠 Welcome to Sakani! Start your journey',
+        subject: 'Welcome to Sakani! Start your journey',
         html,
     });
 };
