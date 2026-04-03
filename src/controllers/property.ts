@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { ICreatePropertyInput, IPropertyId, ISearchPropertyInput, IUpdatePropertyInput } from "../types/property";
 import { Property } from "../models/property";
-import { BadRequestError, NotFoundError } from "../errors";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors";
 import cloudinary from "../config/cloudinary";
 import { extractPublicId } from "cloudinary-build-url";
 
@@ -12,6 +12,9 @@ class PropertyController {
         const body = req.validated?.body as ICreatePropertyInput;
         const files = req.files as Express.Multer.File[];
         const images = files?.map(file => file.path) ?? [];
+
+        const isLimited = await Property.countDocuments({ owner: userId });
+        if (isLimited > 5) throw new ConflictError("You reach your limit of creation: '5 properties'");
 
         const data = await Property.create({ ...body, images, owner: userId });
 

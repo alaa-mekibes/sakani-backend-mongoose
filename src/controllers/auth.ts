@@ -9,7 +9,7 @@ import { Property } from "../models/property";
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "../config/cloudinary";
 import { generateVerificationCodeAndExpiry } from "../utils/generateVerificationCodeAndExpiry";
-import { sendResetPasswordEmail, sendVerificationEmail } from "../config/mailer";
+import { sendResetPasswordEmail, sendVerificationEmail, sendWelcomeEmail } from "../config/mailer";
 
 class AuthController {
     public async registerUser(req: Request, res: Response) {
@@ -54,7 +54,7 @@ class AuthController {
         res.cookie('jwt', '', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'PRODUCTION',
-            sameSite: 'none',
+            sameSite: process.env.NODE_ENV === 'PRODUCTION' ? 'none' : 'lax',
             expires: new Date(0),
         });
 
@@ -92,6 +92,8 @@ class AuthController {
         user.verificationCode = null;
         user.verificationExpiry = null;
         await user.save();
+
+        sendWelcomeEmail(user.email, user.name);
 
         const token = generateToken(user.id, res);
         const { password, ...safeUser } = user.toObject();

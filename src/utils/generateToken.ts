@@ -11,17 +11,16 @@ import jwt from 'jsonwebtoken';
 
 
 const generateToken = (userId: string, res: Response) => {
-    const payload = { id: userId };
-    if (!process.env.JWT_SECRET_KEY) throw new Error('JWT_SECRET_KEY is not defined in environment variables');
+    if (!process.env.JWT_SECRET_KEY) throw new Error('JWT_SECRET_KEY is not defined');
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: "30d" });
+    const token = jwt.sign({ id: userId }, process.env.JWT_SECRET_KEY, { expiresIn: '30d' });
 
-    res.cookie("jwt", token, {
-        httpOnly: true, // ? XSS attacks
-        secure: process.env.NODE_ENV === 'PRODUCTION', // ? run in just https
-        sameSite: "none", // ? CSRF attacks
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
+    res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'PRODUCTION', //? false => send both http & https
+        sameSite: process.env.NODE_ENV === 'PRODUCTION' ? 'none' : 'lax', //? true => must the frontend and backend have the same domain name
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
 
     return token;
 };
