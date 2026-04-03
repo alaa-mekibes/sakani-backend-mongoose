@@ -28,6 +28,7 @@ const authMiddleware = async (req: Request, _: Response, next: NextFunction) => 
         const user = await User.findById(decoded.id);
 
         if (!user) throw new UnauthorizedError("User no longer exists");
+        if (!user.isVerified) throw new UnauthorizedError("Please verify your email first");
 
         req.user = user;
         next();
