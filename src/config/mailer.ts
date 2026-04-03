@@ -23,3 +23,20 @@ export const sendVerificationEmail = async (to: string, code: string) => {
         `,
     });
 };
+
+export const sendResetPasswordEmail = async (to: string, code: string) => {
+    await transporter.sendMail({
+        from: `"Sakani" <${process.env.GMAIL_USER}>`,
+        to,
+        subject: 'Reset your Sakani password',
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto;">
+                <h2>Reset your password 🔑</h2>
+                <p>Your reset code:</p>
+                <h1 style="letter-spacing: 8px; color: #570df8;">${code}</h1>
+                <p>This code expires in <strong>10 minutes</strong>.</p>
+                <p>If you didn't request this, ignore this email.</p>
+            </div>
+        `,
+    });
+};

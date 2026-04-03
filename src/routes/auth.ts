@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validate } from "../middleware/validate";
-import { createUserSchema, loginUserSchema, updateUserSchema, userIdSchema, verifyEmailSchema, verifyOnlyEmailSchema } from "../schemas/user";
+import { createUserSchema, loginUserSchema, updateUserSchema, userIdSchema, verifyEmailSchema, verifyOnlyEmailSchema, resetPasswordSchema } from "../schemas/user";
 import AuthController from "../controllers/auth";
 import authMiddleware from "../middleware/auth";
 import { uploadAvatar } from "../middleware/upload";
@@ -17,5 +17,7 @@ router.post("/logout", (req, res) => authController.logoutUser(req, res));
 router.delete("/", (req, res) => authController.removeUser(req, res));
 router.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
 router.post('/resend-code', validate(verifyOnlyEmailSchema), authController.resendVerificationCode);
+router.post('/forgot-password', validate(verifyOnlyEmailSchema), authController.forgotPassword);
+router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 export default router;

@@ -5,7 +5,9 @@ interface IUser extends ICreateUserInput {
     avatar?: string;
     isVerified: boolean;
     verificationCode: string | null;
-    verificationExpiry: Date | null
+    verificationExpiry: Date | null;
+    resetPasswordCode: string | null;
+    resetPasswordExpiry: Date | null;
 }
 
 const userSchema = new Schema<IUser>(
@@ -17,6 +19,8 @@ const userSchema = new Schema<IUser>(
         isVerified: { type: Boolean, default: false },
         verificationCode: { type: String },
         verificationExpiry: { type: Date },
+        resetPasswordCode: { type: String },
+        resetPasswordExpiry: { type: Date },
     },
     {
         timestamps: true,

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { ICreateUserInput, ILoginUserInput, IUpdateUserInput, IUserId, IVerifyEmailInput } from "../types/user";
+import type { ICreateUserInput, ILoginUserInput, IResetPasswordInput, IUpdateUserInput, IUserId, IVerifyEmailInput } from "../types/user";
 import generateToken from "../utils/generateToken";
 import { User } from "../models/user";
 import { ConflictError, NotFoundError } from "../errors";
@@ -9,7 +9,7 @@ import { Property } from "../models/property";
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "../config/cloudinary";
 import { generateVerificationCodeAndExpiry } from "../utils/generateVerificationCodeAndExpiry";
-import { sendVerificationEmail } from "../config/mailer";
+import { sendResetPasswordEmail, sendVerificationEmail } from "../config/mailer";
 
 class AuthController {
     public async registerUser(req: Request, res: Response) {
@@ -120,6 +120,50 @@ class AuthController {
         await sendVerificationEmail(user.email, code);
 
         return res.json(ApiResponse.success(null, { message: 'Code resent successfully' }));
+    }
+
+    public async forgotPassword(req: Request, res: Response) {
+        const { email } = req.validated?.body as { email: string };
+
+        const user = await User.findOne({ email });
+
+        //* Best practice
+        if (!user) return res.json(ApiResponse.success(null, {
+            message: 'If this email exists you will receive a code'
+        }));
+
+        const { code, expiry } = generateVerificationCodeAndExpiry();
+
+
+        user.resetPasswordCode = code;
+        user.resetPasswordExpiry = expiry;
+        await user.save();
+
+        await sendResetPasswordEmail(user.email, code);
+
+        return res.json(ApiResponse.success(null, {
+            message: 'If this email exists you will receive a code'
+        }));
+    }
+
+    public async resetPassword(req: Request, res: Response) {
+        const { email, code, password } = req.validated?.body as IResetPasswordInput;
+
+        const user = await User.findOne({ email });
+        if (!user) throw new NotFoundError('User not found');
+
+        if (user.resetPasswordCode !== code) throw new ConflictError('Invalid code');
+
+        if (!user.resetPasswordExpiry || user.resetPasswordExpiry < new Date()) {
+            throw new ConflictError('Code expired');
+        }
+
+        user.password = await bcrypt.hash(password, 10);
+        user.resetPasswordCode = null;
+        user.resetPasswordExpiry = null;
+        await user.save();
+
+        return res.json(ApiResponse.success(null, { message: 'Password reset successfully' }));
     }
 
     public async getMyProfile(req: Request, res: Response) {

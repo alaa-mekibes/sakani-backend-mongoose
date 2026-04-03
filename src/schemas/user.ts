@@ -31,3 +31,9 @@ export const verifyEmailSchema = z.object({
 export const verifyOnlyEmailSchema = z.object({
     email: z.email(),
 }).strict();
+
+export const resetPasswordSchema = z.object({
+    email: z.email(),
+    code: z.string().length(6),
+    password: z.string().min(8),
+});
