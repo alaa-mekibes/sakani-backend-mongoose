@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validate } from "../middleware/validate";
-import { createUserSchema, loginUserSchema, updateUserSchema, userIdSchema } from "../schemas/user";
+import { createUserSchema, loginUserSchema, updateUserSchema, userIdSchema, verifyEmailSchema, verifyOnlyEmailSchema } from "../schemas/user";
 import AuthController from "../controllers/auth";
 import authMiddleware from "../middleware/auth";
 import { uploadAvatar } from "../middleware/upload";
@@ -15,5 +15,7 @@ router.get("/:userId", authMiddleware, validate(userIdSchema, 'params'), (req, r
 router.patch("/me", authMiddleware, uploadAvatar.single('image'), validate(updateUserSchema), (req, res) => authController.updateMyProfile(req, res));
 router.post("/logout", (req, res) => authController.logoutUser(req, res));
 router.delete("/", (req, res) => authController.removeUser(req, res));
+router.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
+router.post('/resend-code', validate(verifyOnlyEmailSchema), authController.resendVerificationCode);
 
 export default router;

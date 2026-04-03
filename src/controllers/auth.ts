@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { ICreateUserInput, ILoginUserInput, IUpdateUserInput, IUserId } from "../types/user";
+import type { ICreateUserInput, ILoginUserInput, IUpdateUserInput, IUserId, IVerifyEmailInput } from "../types/user";
 import generateToken from "../utils/generateToken";
 import { User } from "../models/user";
 import { ConflictError, NotFoundError } from "../errors";
@@ -8,6 +8,8 @@ import { ApiResponse } from "../utils/apiResponse";
 import { Property } from "../models/property";
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "../config/cloudinary";
+import { generateVerificationCodeAndExpiry } from "../utils/generateVerificationCodeAndExpiry";
+import { sendVerificationEmail } from "../config/mailer";
 
 class AuthController {
     public async registerUser(req: Request, res: Response) {
@@ -18,13 +20,18 @@ class AuthController {
 
         const hashedPassword = await bcrypt.hash(body.password, 10);
 
-        const user = await User.create({ ...body, password: hashedPassword })
+        const { code, expiry } = generateVerificationCodeAndExpiry();
+
+        const user = await User.create({ ...body, password: hashedPassword, verificationCode: code, verificationExpiry: expiry, isVerified: false, })
+
+        await sendVerificationEmail(user.email, code);
 
         const token = generateToken(user.id, res);
 
+
         const { password, ...safeUser } = user.toObject();
 
-        return res.status(201).json(ApiResponse.success(safeUser, { token }));
+        return res.status(201).json(ApiResponse.success(safeUser, { token }, 'Check your email for the verification code'));
     }
 
     public async loginUser(req: Request, res: Response) {
@@ -63,6 +70,56 @@ class AuthController {
         ]);
 
         return res.status(200).json(ApiResponse.success("ok"));
+    }
+
+    public async verifyEmail(req: Request, res: Response) {
+        const { email, code } = req.validated?.body as IVerifyEmailInput;
+
+        const user = await User.findOne({ email });
+        if (!user) throw new NotFoundError('User not found');
+
+        if (user.isVerified) throw new ConflictError('Already verified');
+
+        if (user.verificationCode !== code) {
+            throw new ConflictError('Invalid code');
+        }
+
+        if (!user.verificationExpiry || user.verificationExpiry < new Date()) {
+            throw new ConflictError('Code expired');
+        }
+
+        user.isVerified = true;
+        user.verificationCode = null;
+        user.verificationExpiry = null;
+        await user.save();
+
+        const token = generateToken(user.id, res);
+        const { password, ...safeUser } = user.toObject();
+
+        return res.json(ApiResponse.success(safeUser, { token }));
+    }
+
+    public async resendVerificationCode(req: Request, res: Response) {
+        const { email } = req.validated?.body as { email: string };
+
+        const user = await User.findOne({ email });
+        if (!user) throw new NotFoundError('User not found');
+        if (user.isVerified) throw new ConflictError('Already verified');
+
+        const coolDown = 60 * 1000; // 1 minute
+        if (user.verificationExpiry && user.verificationExpiry.getTime() - 9 * 60 * 1000 > Date.now() - coolDown) {
+            throw new ConflictError('Please wait 1 minute before requesting a new code');
+        }
+
+        const { code, expiry } = generateVerificationCodeAndExpiry();
+
+        user.verificationCode = code;
+        user.verificationExpiry = expiry;
+        await user.save();
+
+        await sendVerificationEmail(user.email, code);
+
+        return res.json(ApiResponse.success(null, { message: 'Code resent successfully' }));
     }
 
     public async getMyProfile(req: Request, res: Response) {

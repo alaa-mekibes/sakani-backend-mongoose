@@ -23,3 +23,11 @@ export const userIdSchema = z.object({
     userId: objectId
 }).strict();
 
+export const verifyEmailSchema = z.object({
+    email: z.email(),
+    code: z.string().length(6),
+}).strict();
+
+export const verifyOnlyEmailSchema = z.object({
+    email: z.email(),
+}).strict();
