@@ -24,7 +24,7 @@ class AuthController {
 
         const user = await User.create({ ...body, password: hashedPassword, verificationCode: code, verificationExpiry: expiry, isVerified: false, })
 
-        await sendVerificationEmail(user.email, code);
+        sendVerificationEmail(user.email, code);
 
         await generateToken(user.id, res);
 
@@ -35,17 +35,24 @@ class AuthController {
     public async loginUser(req: Request, res: Response) {
         const body = req.validated?.body as ILoginUserInput;
 
-        const userExists = await User.findOne({ email: body.email });
-        if (!userExists) throw new ConflictError("The email or password is incorrect");
+        const user = await User.findOne({ email: body.email });
+        if (!user) throw new ConflictError("The email or password is incorrect");
 
-        const passwordIsCorrect = await bcrypt.compare(body.password, userExists?.password);
+        const passwordIsCorrect = await bcrypt.compare(body.password, user?.password);
         if (!passwordIsCorrect) throw new ConflictError("The email or password is incorrect");
 
-        if (!userExists.isVerified) throw new ConflictError("Please verify your email first");
+        if (!user.isVerified) {
+            const { code, expiry } = generateVerificationCodeAndExpiry();
+            user.verificationCode = code;
+            user.verificationExpiry = expiry;
+            await user.save();
+            sendVerificationEmail(user.email, code);
+            throw new ConflictError("Please verify your email first");
+        }
 
-        const token = generateToken(userExists.id, res);
+        const token = generateToken(user.id, res);
 
-        const { password, ...safeUser } = userExists.toObject();
+        const { password, ...safeUser } = user.toObject();
 
         return res.status(200).json(ApiResponse.success(safeUser, '', { token }));
     }
