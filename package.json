@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc",
+    "build": "bun install && tsc",
     "start": "node dist/server.js"
   },
   "devDependencies": {

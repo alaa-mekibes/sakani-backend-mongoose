@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
-import { ICreatePropertyInput, IPropertyId, ISearchPropertyInput, IUpdatePropertyInput } from "../types/property";
+import { ICreatePropertyInput, IPropertyId, ISearchPropertyInput } from "../types/property";
 import { Property } from "../models/property";
 import { BadRequestError, ConflictError, NotFoundError } from "../errors";
 import cloudinary from "../config/cloudinary";
@@ -10,8 +10,7 @@ class PropertyController {
     public async addProperty(req: Request, res: Response) {
         const userId = req.user!.id;
         const body = req.validated?.body as ICreatePropertyInput;
-        const files = req.files as Express.Multer.File[];
-        const images = files?.map(file => file.path) ?? [];
+        const images = req.uploadedImages ?? [];
 
         const isLimited = await Property.countDocuments({ owner: userId });
         if (isLimited > 5) throw new ConflictError("You reach your limit of creation: '5 properties'");
@@ -38,14 +37,16 @@ class PropertyController {
 
     public async updateProperty(req: Request, res: Response) {
         const userId = req.user!.id;
-        const { existingImages, ...body } = req.validated?.body as IUpdatePropertyInput;
         const { propertyId } = req.validated.params as IPropertyId;
-        const files = req.files as Express.Multer.File[];
-        const newImages = files?.map(f => f.path) ?? [];
+        const newImages = req.uploadedImages ?? [];
 
         const property = await Property.findOne({ _id: propertyId, owner: userId });
         if (!property) throw new NotFoundError("This property is not found");
 
+        const { existingImages: rawExisting, ...updateData } = req.body;
+        const existingImages = rawExisting.filter(
+            (img: string) => img && img.startsWith('http')
+        );
         const removedImages = property.images.filter(
             (img: string) => !existingImages.includes(img)
         );
@@ -57,13 +58,13 @@ class PropertyController {
             })
         );
 
-        const images = [...existingImages, ...newImages];
+        const images = [...existingImages, ...newImages].filter(Boolean);
 
         if (images.length > 5) throw new BadRequestError("Maximum 5 images allowed");
 
         const updatedProperty = await Property.findOneAndUpdate(
             { _id: propertyId, owner: userId },
-            { ...body, images, updatedAt: new Date() },
+            { ...updateData, images, updatedAt: new Date() },
             { returnDocument: 'after' }
         );
 

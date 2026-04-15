@@ -193,27 +193,21 @@ class AuthController {
     public async updateMyProfile(req: Request, res: Response) {
         const userId = req.user!.id;
         const { ...body } = req.validated?.body as IUpdateUserInput;
-        const file = req.file as Express.Multer.File;
-        const newImage = file?.path;
+        const newImage = req.uploadedImages?.[0] ?? '';
 
-        if (body.email) {
-            const userExists = await User.findOne({ email: body.email });
-            if (userExists) throw new ConflictError("This email already exists");
+        const user = await User.findById(userId);
+        if (!user) throw new NotFoundError("user is not found");
+
+        let avatar = user.avatar;
+        if (newImage) {
+            if (user.avatar) await cloudinary.uploader.destroy(extractPublicId(user.avatar));
+            avatar = newImage;
         }
 
         if (body.password) body.password = await bcrypt.hash(body.password, 10);
-
-        if (newImage) {
-            const existedUser = await User.findById(userId);
-            if (existedUser?.avatar) {
-                const publicId = extractPublicId(existedUser.avatar);
-                await cloudinary.uploader.destroy(publicId);
-            }
-        }
-
         const newUser = await User.findByIdAndUpdate(
             userId,
-            { ...body, ...(newImage && { avatar: newImage }), updatedAt: new Date() },
+            { ...body, ...(newImage && { avatar }), updatedAt: new Date() },
             { returnDocument: 'after' }
         );
 

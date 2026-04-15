@@ -5,6 +5,7 @@ declare global {
         interface Request {
             user?: IUserDocument,
             validated: { body?: unknown; params?: unknown; query?: unknown };
+            uploadedImages?: string[];
         }
     }
 }
