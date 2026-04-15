@@ -49,7 +49,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server running → ${process.env.FRONTEND_URL}:${PORT}/`);
+  console.log(`Server running → ${process.env.BACKEND_URL}:${PORT}/`);
 });
 
 export default app;

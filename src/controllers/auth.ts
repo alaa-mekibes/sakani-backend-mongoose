@@ -26,9 +26,6 @@ class AuthController {
 
         sendVerificationEmail(user.email, code);
 
-        await generateToken(user.id, res);
-
-
         return res.status(201).json(ApiResponse.success(null, 'Check your email for the verification code'));
     }
 

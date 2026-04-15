@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "start": "ts-node src/server.ts"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -23,7 +24,6 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "backend": ".",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
     "cloudinary-build-url": "^0.2.4",
