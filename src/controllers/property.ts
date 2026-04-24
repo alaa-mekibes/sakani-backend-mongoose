@@ -51,13 +51,6 @@ class PropertyController {
             (img: string) => !existingImages.includes(img)
         );
 
-        await Promise.all(
-            removedImages.map((img: string) => {
-                const publicId = extractPublicId(img);
-                return cloudinary.uploader.destroy(publicId);
-            })
-        );
-
         const images = [...existingImages, ...newImages].filter(Boolean);
 
         if (images.length > 5) throw new BadRequestError("Maximum 5 images allowed");
@@ -68,6 +61,21 @@ class PropertyController {
             { returnDocument: 'after' }
         );
 
+        if (removedImages.length > 0) {
+            const results = await Promise.allSettled(
+                removedImages.map((img: string) => {
+                    const publicId = extractPublicId(img);
+                    return cloudinary.uploader.destroy(publicId);
+                })
+            );
+
+            results.forEach((result, i) => {
+                if (result.status === 'rejected') {
+                    console.error(`Failed to delete image ${removedImages[i]}:`, result.reason);
+                }
+            });
+        }
+
         return res.status(200).json(ApiResponse.success(updatedProperty));
     }
 
@@ -75,10 +83,25 @@ class PropertyController {
         const userId = req.user!.id;
         const { propertyId } = req.validated.params as IPropertyId;
 
-        const propertyExists = await Property.findOneAndDelete({ _id: propertyId, owner: userId });
-        if (!propertyExists) throw new NotFoundError("This property is not found");
+        const property = await Property.findOneAndDelete({ _id: propertyId, owner: userId });
+        if (!property) throw new NotFoundError("This property is not found");
 
-        return res.status(200).json(ApiResponse.success(propertyExists));
+        if (property.images.length > 0) {
+            const results = await Promise.allSettled(
+                property.images.map((img: string) => {
+                    const publicId = extractPublicId(img);
+                    return cloudinary.uploader.destroy(publicId);
+                })
+            );
+
+            results.forEach((result, i) => {
+                if (result.status === 'rejected') {
+                    console.error(`Failed to delete image ${property.images[i]}:`, result.reason);
+                }
+            });
+        }
+
+        return res.status(200).json(ApiResponse.success(property));
     }
 
     public async getProperty(req: Request, res: Response) {

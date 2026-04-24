@@ -68,8 +68,35 @@ class AuthController {
     public async removeUser(req: Request, res: Response) {
         const userId = req.user!.id;
 
+        const user = await User.findById(userId);
+        if (!user) throw new NotFoundError("User is not found");
+
+        const properties = await Property.find({ owner: userId });
+
+        const cloudinaryTargets: string[] = [
+            user.avatar,
+            ...properties.flatMap((p) => p.images || []),
+        ].filter(Boolean) as string[];
+
+        if (cloudinaryTargets.length > 0) {
+            const results = await Promise.allSettled(
+                cloudinaryTargets.map((img) =>
+                    cloudinary.uploader.destroy(extractPublicId(img))
+                )
+            );
+
+            results.forEach((result, i) => {
+                if (result.status === "rejected") {
+                    console.error(
+                        `Failed to delete asset ${cloudinaryTargets[i]}:`,
+                        result.reason
+                    );
+                }
+            });
+        }
+
         await Promise.all([
-            User.findByIdAndDelete(userId),
+            User.deleteOne({ _id: userId }),
             Property.deleteMany({ owner: userId }),
         ]);
 
@@ -198,11 +225,8 @@ class AuthController {
         const user = await User.findById(userId);
         if (!user) throw new NotFoundError("user is not found");
 
-        let avatar = user.avatar;
-        if (newImage) {
-            if (user.avatar) await cloudinary.uploader.destroy(extractPublicId(user.avatar));
-            avatar = newImage;
-        }
+        const oldAvatar = user.avatar ?? null;
+        const avatar = newImage || user.avatar;
 
         if (body.password) body.password = await bcrypt.hash(body.password, 10);
         const newUser = await User.findByIdAndUpdate(
@@ -210,8 +234,15 @@ class AuthController {
             { ...body, ...(newImage && { avatar }), updatedAt: new Date() },
             { returnDocument: 'after' }
         );
-
         if (!newUser) throw new NotFoundError("User not found");
+
+        if (newImage && oldAvatar) {
+            try {
+                await cloudinary.uploader.destroy(extractPublicId(oldAvatar))
+            } catch (err) {
+                console.error('Failed to delete old avatar from Cloudinary:', err);
+            }
+        }
 
         const { password, ...safeUser } = newUser.toObject();
         return res.status(200).json(ApiResponse.success(safeUser));
