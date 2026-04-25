@@ -16,7 +16,7 @@ const userSchema = new Schema<IUser>(
         email: { type: String, required: true, unique: true, lowercase: true },
         password: { type: String, required: true, minlength: 8 },
         avatar: { type: String, required: false },
-        isVerified: { type: Boolean, default: false },
+        isVerified: { type: Boolean, default: true },//! In future change this to false
         verificationCode: { type: String },
         verificationExpiry: { type: Date },
         resetPasswordCode: { type: String },

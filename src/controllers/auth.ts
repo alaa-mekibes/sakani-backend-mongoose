@@ -22,7 +22,7 @@ class AuthController {
 
         const { code, expiry } = generateVerificationCodeAndExpiry();
 
-        const user = await User.create({ ...body, password: hashedPassword, verificationCode: code, verificationExpiry: expiry, isVerified: false, })
+        const user = await User.create({ ...body, password: hashedPassword, verificationCode: code, verificationExpiry: expiry, })
 
         sendVerificationEmail(user.email, code);
 
@@ -150,7 +150,9 @@ class AuthController {
         user.verificationExpiry = expiry;
         await user.save();
 
-        await sendVerificationEmail(user.email, code);
+        sendVerificationEmail(user.email, code).catch((err) => {
+            console.error("Failed to send email:", err);
+        });
 
         return res.json(ApiResponse.success(null, 'Code resent successfully'));
     }
@@ -170,7 +172,9 @@ class AuthController {
         user.resetPasswordExpiry = expiry;
         await user.save();
 
-        await sendResetPasswordEmail(user.email, code);
+        sendResetPasswordEmail(user.email, code).catch((err) => {
+            console.error("Failed to send email:", err);
+        });
 
         return res.json(ApiResponse.success(null, 'If this email exists you will receive a code'));
     }
