@@ -1,37 +1,49 @@
-import z from "zod";
-import { objectId } from "../lib/zod";
+import z from 'zod';
+import { objectId } from '../lib/zod';
 
-export const createUserSchema = z.object({
+export const createUserSchema = z
+  .object({
     name: z.string().min(2).max(20),
     email: z.email(),
-    password: z.string().min(8)
-}).strict();
+    password: z.string().min(8),
+  })
+  .strict();
 
-export const loginUserSchema = z.object({
+export const loginUserSchema = z
+  .object({
     email: z.email(),
-    password: z.string().min(8)
-}).strict();
+    password: z.string().min(8),
+  })
+  .strict();
 
-export const updateUserSchema = z.object({
+export const updateUserSchema = z
+  .object({
     name: z.string().min(2).max(20).optional(),
     password: z.string().min(8).optional(),
-}).strict();
+  })
+  .strict();
 
-export const userIdSchema = z.object({
-    userId: objectId
-}).strict();
+export const userIdSchema = z
+  .object({
+    userId: objectId,
+  })
+  .strict();
 
-export const verifyEmailSchema = z.object({
+export const verifyEmailSchema = z
+  .object({
     email: z.email(),
     code: z.string().length(6),
-}).strict();
+  })
+  .strict();
 
-export const verifyOnlyEmailSchema = z.object({
+export const verifyOnlyEmailSchema = z
+  .object({
     email: z.email(),
-}).strict();
+  })
+  .strict();
 
 export const resetPasswordSchema = z.object({
-    email: z.email(),
-    code: z.string().length(6),
-    password: z.string().min(8),
+  email: z.email(),
+  code: z.string().length(6),
+  password: z.string().min(8),
 });

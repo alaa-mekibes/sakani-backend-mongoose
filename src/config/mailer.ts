@@ -2,9 +2,9 @@ import nodemailer from 'nodemailer';
 import { getVerificationContent, getBaseTemplate, getResetPasswordContent, getWelcomeContent } from './emailTemplates';
 
 const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
+    host: "smtp.zoho.com",
+    secure: true,
+    port: 465,
     auth: {
         user: process.env.GMAIL_USER!,
         pass: process.env.GMAIL_APP_PASSWORD!,
