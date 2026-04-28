@@ -29,6 +29,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 app.use(helmet());
+// trust client proxy (for render)
+app.set('trust proxy', 1);
 app.use(rateLimit(rateLimitOptions));
 app.use(cookieParser());
 app.use(cors({
